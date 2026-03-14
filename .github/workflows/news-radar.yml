@@ -1,0 +1,61 @@
+name: AI News Radar
+
+on:
+  schedule:
+    - cron: '0 21 * * *'  # 毎日 21:00 UTC (= JST 6:00)
+  workflow_dispatch:       # 手動実行
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  news-radar:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: uv セットアップ
+        uses: astral-sh/setup-uv@v5
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 依存パッケージのインストール
+        run: uv sync
+
+      - name: News Radar 実行
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GOOGLE_ALERTS_RSS_1: ${{ secrets.GOOGLE_ALERTS_RSS_1 }}
+          GOOGLE_ALERTS_RSS_2: ${{ secrets.GOOGLE_ALERTS_RSS_2 }}
+        run: uv run python -m src.main
+
+      - name: 状態ファイルをコミット＆プッシュ
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/state.json
+          git diff --staged --quiet && exit 0
+          git commit -m "Update state.json [skip ci]"
+          if ! git push; then
+            echo "::warning::git push failed, creating PR as fallback"
+            BRANCH="auto/update-state-$(date +%Y%m%d-%H%M%S)"
+            git checkout -b "$BRANCH"
+            git push -u origin "$BRANCH"
+            gh pr create \
+              --title "Update state.json" \
+              --body "Direct push to main failed. Please merge this PR to update the state file." \
+              --base main
+          fi
