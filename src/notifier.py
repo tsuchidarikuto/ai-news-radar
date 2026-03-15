@@ -30,32 +30,46 @@ def _split_text(text: str, max_length: int) -> list[str]:
     return chunks
 
 
+def _find_pick(digest: Digest, best_pick_source: str) -> tuple[str, "PickedArticle | None"]:
+    """Gemini が選んだ best_pick_source に対応するピックを探す。"""
+    from src.summarizer import PickedArticle  # noqa: F811
+
+    # Gemini が選んだソースを探す
+    if best_pick_source:
+        if best_pick_source == "AI トレンド" and digest.trends:
+            return "AI トレンド", digest.trends[0]
+        pick = digest.picks.get(best_pick_source)
+        if pick:
+            return best_pick_source, pick
+
+    # フォールバック: SOURCE_ORDER の先頭 → trend
+    for source in SOURCE_ORDER:
+        pick = digest.picks.get(source)
+        if pick:
+            return source, pick
+    if digest.trends:
+        return "AI トレンド", digest.trends[0]
+
+    return "", None
+
+
 def _build_text(
-    date_str: str, slack_summary: str, digest: Digest, notion_url: str
+    date_str: str, slack_summary: str, digest: Digest, notion_url: str,
+    best_pick_source: str = "",
 ) -> str:
-    """Slack メッセージテキストを構築する。unfurl_links 用に URL をベタ貼り。"""
+    """Slack メッセージテキストを構築する。"""
     parts: list[str] = [f"*AI News Radar - {date_str}*"]
 
     if slack_summary:
         parts.append("")
         parts.append(slack_summary)
 
-    # ピックアップ1本（tech ソース優先、なければ trend からフォールバック）
-    top_pick = None
-    for source in SOURCE_ORDER:
-        pick = digest.picks.get(source)
-        if pick:
-            top_pick = (source, pick)
-            break
-
-    if not top_pick and digest.trends:
-        t = digest.trends[0]
-        top_pick = ("AI トレンド", t)
+    # ピックアップ1本（Gemini が選出）
+    source, pick = _find_pick(digest, best_pick_source)
 
     parts.append("")
     parts.append("---")
-    if top_pick:
-        source, pick = top_pick
+    if pick:
         parts.append(f"*Pick! {source}: <{pick.url}|{pick.title}>*")
         parts.append(pick.description)
     else:
@@ -64,20 +78,21 @@ def _build_text(
     # Notion リンク
     if notion_url:
         parts.append("")
-        parts.append(f"詳細はこちら: <{notion_url}|Notion>")
+        parts.append(f"詳細はこちら: {notion_url}")
 
     return "\n".join(parts)
 
 
 def notify(
-    date_str: str, slack_summary: str, digest: Digest, notion_url: str
+    date_str: str, slack_summary: str, digest: Digest, notion_url: str,
+    best_pick_source: str = "",
 ) -> None:
     """Slack にダイジェストを送信する。"""
     webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
     if not webhook_url:
         raise RuntimeError("SLACK_WEBHOOK_URL environment variable is not set")
 
-    text = _build_text(date_str, slack_summary, digest, notion_url)
+    text = _build_text(date_str, slack_summary, digest, notion_url, best_pick_source)
     payload = {
         "text": text,
         "unfurl_links": True,

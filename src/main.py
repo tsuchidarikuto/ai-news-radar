@@ -52,12 +52,12 @@ def main() -> None:
     # 3. ソース別 Gemini ダイジェスト生成（各ソース独立に1回ずつ呼び出し）
     digest = summarize_by_source(new_articles)
 
-    # 4. Slack 概要を Gemini で生成（ダイジェスト全文をソースに）
+    # 4. Slack 概要 + ピック選出を Gemini で生成
     try:
-        slack_summary = generate_slack_summary(digest)
+        slack_summary, best_pick_source = generate_slack_summary(digest)
     except Exception:
         logger.warning("Failed to generate Slack summary, using fallback", exc_info=True)
-        slack_summary = ""
+        slack_summary, best_pick_source = "", ""
 
     if args.dry_run:
         print(format_dry_run(today, digest, slack_summary))
@@ -67,7 +67,7 @@ def main() -> None:
     notion_url = create_digest_page(digest)
 
     # 6. Slack に通知
-    notify(today, slack_summary, digest, notion_url)
+    notify(today, slack_summary, digest, notion_url, best_pick_source)
 
     # 7. state を更新・保存
     # picked: Notion に書いた記事のみ（trends + picks の URL）

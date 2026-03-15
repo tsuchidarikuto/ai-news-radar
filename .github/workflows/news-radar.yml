@@ -35,6 +35,7 @@ jobs:
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          NOTION_WORKSPACE: ${{ secrets.NOTION_WORKSPACE }}
           GOOGLE_ALERTS_RSS_1: ${{ secrets.GOOGLE_ALERTS_RSS_1 }}
           GOOGLE_ALERTS_RSS_2: ${{ secrets.GOOGLE_ALERTS_RSS_2 }}
         run: uv run python -m src.main

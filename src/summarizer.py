@@ -247,11 +247,15 @@ def build_digest_text(digest: Digest) -> str:
     return "\n".join(parts)
 
 
-def generate_slack_summary(digest: Digest) -> str:
-    """ダイジェスト全体から Slack 用の3行概要を生成する。"""
+def generate_slack_summary(digest: Digest) -> tuple[str, str]:
+    """ダイジェスト全体から Slack 用の3行概要と best pick を生成する。
+
+    Returns:
+        (summary, best_pick_source) のタプル。
+    """
     text = build_digest_text(digest)
     if not text:
-        return ""
+        return "", ""
 
     client = _get_client()
     model = _get_model()
@@ -261,6 +265,6 @@ def generate_slack_summary(digest: Digest) -> str:
     data = _parse_json(raw)
 
     if not data:
-        return ""
+        return "", ""
 
-    return data.get("summary", "")
+    return data.get("summary", ""), data.get("best_pick", "")

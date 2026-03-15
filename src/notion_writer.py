@@ -118,6 +118,13 @@ def create_digest_page(digest: Digest) -> str:
         remaining = remaining[_NOTION_BLOCK_LIMIT:]
         client.blocks.children.append(block_id=page_id, children=batch)
 
-    page_url = page.get("url", "")
+    # 公開 URL を構築（NOTION_WORKSPACE があれば notion.site 形式）
+    workspace = os.environ.get("NOTION_WORKSPACE")
+    if workspace:
+        clean_id = page_id.replace("-", "")
+        page_url = f"https://{workspace}.notion.site/{clean_id}"
+    else:
+        page_url = page.get("url", "")
+
     logger.info("Created Notion page: %s", page_url)
     return page_url
