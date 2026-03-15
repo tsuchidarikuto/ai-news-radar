@@ -79,7 +79,7 @@ def _build_text(
     # Notion リンク（ベタ貼りで unfurl 狙い）
     if notion_url:
         parts.append("")
-        parts.append("詳細はこちら:")
+        parts.append("*詳細はこちら:*")
         parts.append(notion_url)
 
     return "\n".join(parts)
