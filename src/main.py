@@ -70,7 +70,13 @@ def main() -> None:
     notify(today, slack_summary, digest, notion_url)
 
     # 7. state を更新・保存
-    state = mark_processed(state, new_articles)
+    # picked: Notion に書いた記事のみ（trends + picks の URL）
+    picked_articles = []
+    for t in digest.trends:
+        picked_articles.extend(a for a in new_articles if a.url == t.url)
+    for pick in digest.picks.values():
+        picked_articles.extend(a for a in new_articles if a.url == pick.url)
+    state = mark_processed(state, new_articles, picked_articles)
     save_state(state)
 
     logger.info("Done")

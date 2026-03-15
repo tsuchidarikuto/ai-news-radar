@@ -12,6 +12,7 @@ class FeedSource:
     url: str
     feed_type: str = "rss"  # "rss", "atom", "html"
     category: str = "tech"  # "tech" (個別ソース) or "trend" (Google Alerts)
+    reselectable: bool = False  # True: 未ピックアップ記事を7日間再候補にする
 
 
 def get_feeds() -> list[FeedSource]:
@@ -56,10 +57,12 @@ FEEDS: list[FeedSource] = [
     FeedSource(
         name="Zenn",
         url="https://zenn.dev/topics/ai/feed",
+        reselectable=True,
     ),
     FeedSource(
         name="Qiita",
         url="https://qiita.com/popular-items/feed",
         feed_type="atom",
+        reselectable=True,
     ),
 ]

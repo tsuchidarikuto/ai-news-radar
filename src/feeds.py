@@ -30,6 +30,7 @@ class Article:
     url: str
     source: str
     category: str = "tech"  # "tech" or "trend"
+    reselectable: bool = False
     description: str = ""
     published: str = ""
 
@@ -100,6 +101,7 @@ def _fetch_rss(feed: FeedSource) -> list[Article]:
             url=link,
             source=feed.name,
             category=feed.category,
+            reselectable=feed.reselectable,
             description=description[:500],
             published=published,
         ))
@@ -134,6 +136,7 @@ def _fetch_html(feed: FeedSource) -> list[Article]:
             url=url,
             source=feed.name,
             category=feed.category,
+            reselectable=feed.reselectable,
         ))
 
     return articles
