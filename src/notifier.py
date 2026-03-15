@@ -30,59 +30,36 @@ def _split_text(text: str, max_length: int) -> list[str]:
     return chunks
 
 
-def _build_blocks(
+def _build_text(
     date_str: str, slack_summary: str, digest: Digest, notion_url: str
-) -> list[dict]:
-    """Slack Block Kit メッセージを構築する。"""
-    blocks: list[dict] = [
-        {
-            "type": "header",
-            "text": {
-                "type": "plain_text",
-                "text": f"AI News Radar - {date_str}",
-            },
-        },
-    ]
+) -> str:
+    """Slack メッセージテキストを構築する。unfurl_links 用に URL をベタ貼り。"""
+    parts: list[str] = [f"*AI News Radar - {date_str}*"]
 
-    # Gemini 生成の3行概要
     if slack_summary:
-        for chunk in _split_text(slack_summary, _SLACK_SECTION_MAX_LENGTH):
-            blocks.append({
-                "type": "section",
-                "text": {"type": "mrkdwn", "text": chunk},
-            })
+        parts.append("")
+        parts.append(slack_summary)
 
-    # ピックアップ1本（最初に見つかったもの）
-    top_pick = None
-    top_pick_source = ""
+    # ピックアップ（全ソース、URL ベタ貼りで unfurl）
+    picks_parts: list[str] = []
     for source in SOURCE_ORDER:
-        if source in digest.picks:
-            top_pick = digest.picks[source]
-            top_pick_source = source
-            break
+        pick = digest.picks.get(source)
+        if not pick:
+            continue
+        picks_parts.append(f"*[Pick] {source}: {pick.title}*")
+        picks_parts.append(pick.description)
+        picks_parts.append(pick.url)
+        picks_parts.append("")
 
-    if top_pick:
-        blocks.append({"type": "divider"})
-        pick_text = (
-            f"*{top_pick_source}: <{top_pick.url}|{top_pick.title}>*\n"
-            f"{top_pick.description}"
-        )
-        blocks.append({
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": pick_text},
-        })
+    if picks_parts:
+        parts.append("")
+        parts.append("---")
+        parts.extend(picks_parts)
 
-    # Notion リンク
     if notion_url:
-        blocks.append({
-            "type": "context",
-            "elements": [{
-                "type": "mrkdwn",
-                "text": f"<{notion_url}|Notion で詳細を見る>",
-            }],
-        })
+        parts.append(f"<{notion_url}|Notion で全文を見る>")
 
-    return blocks
+    return "\n".join(parts)
 
 
 def notify(
@@ -93,10 +70,11 @@ def notify(
     if not webhook_url:
         raise RuntimeError("SLACK_WEBHOOK_URL environment variable is not set")
 
-    blocks = _build_blocks(date_str, slack_summary, digest, notion_url)
+    text = _build_text(date_str, slack_summary, digest, notion_url)
     payload = {
-        "blocks": blocks,
-        "text": f"AI News Radar - {date_str}",
+        "text": text,
+        "unfurl_links": True,
+        "unfurl_media": True,
     }
 
     response = requests.post(webhook_url, json=payload, timeout=30)
