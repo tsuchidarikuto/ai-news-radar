@@ -24,19 +24,23 @@ def _build_page_children(digest: Digest) -> list[dict]:
     children: list[dict] = []
 
     # AI トレンド
+    children.append(_heading2("AI トレンド"))
     if digest.trends:
-        children.append(_heading2("AI トレンド"))
         for t in digest.trends:
             children.append(_bulleted_link(t.title, t.url, t.description))
+    else:
+        children.append(_paragraph("該当なし"))
 
     # ソース別ピックアップ（タイトル → 概要 → 生URL）
     for source in SOURCE_ORDER:
         pick = digest.picks.get(source)
-        if not pick:
-            continue
-        children.append(_heading2(f"{source}: {pick.title}"))
-        children.append(_paragraph(pick.description))
-        children.append(_paragraph(pick.url))
+        if pick:
+            children.append(_heading2(f"{source}: {pick.title}"))
+            children.append(_paragraph(pick.description))
+            children.append(_paragraph(pick.url))
+        else:
+            children.append(_heading2(source))
+            children.append(_paragraph("該当なし"))
 
     # Sources（全参照記事）
     if digest.all_sources:

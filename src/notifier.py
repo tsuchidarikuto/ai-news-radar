@@ -41,14 +41,21 @@ def _build_text(
         parts.append(slack_summary)
 
     # ピックアップ1本（最も注目度が高いもの）
+    top_pick = None
     for source in SOURCE_ORDER:
         pick = digest.picks.get(source)
         if pick:
-            parts.append("")
-            parts.append("---")
-            parts.append(f"*[Pick] {source}: {pick.title}*")
-            parts.append(pick.description)
+            top_pick = (source, pick)
             break
+
+    parts.append("")
+    parts.append("---")
+    if top_pick:
+        source, pick = top_pick
+        parts.append(f"*[Pick] {source}: {pick.title}*")
+        parts.append(pick.description)
+    else:
+        parts.append("本日のピックアップはありませんでした。")
 
     # Notion URL ベタ貼り（Slack が unfurl してプレビュー表示）
     if notion_url:
