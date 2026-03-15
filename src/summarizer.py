@@ -27,7 +27,8 @@ _client: genai.Client | None = None
 _FALLBACK_MODEL = "gemini-2.5-flash"
 _MAX_ARTICLES_PER_SOURCE = 20
 _MAX_RETRIES = 3
-_RETRY_BASE_DELAY = 2.0
+_RETRY_BASE_DELAY = 5.0
+_INTER_CALL_DELAY = 12.0  # RPM 制限対策（free tier: flash=5RPM, flash-lite=10RPM）
 
 # ソース表示順
 SOURCE_ORDER = ["OpenAI", "Anthropic", "Google AI", "Claude Code", "Zenn", "Qiita"]
@@ -204,11 +205,12 @@ def summarize_by_source(articles: list[Article]) -> Digest:
     except Exception:
         logger.error("Failed to summarize trends", exc_info=True)
 
-    # テックソース別
+    # テックソース別（RPM 制限対策でディレイを挟む）
     picks: dict[str, PickedArticle] = {}
     for source in SOURCE_ORDER:
         if source not in by_source:
             continue
+        time.sleep(_INTER_CALL_DELAY)
         try:
             pick = summarize_source(by_source[source], source)
             if pick:

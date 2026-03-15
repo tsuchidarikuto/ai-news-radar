@@ -12,7 +12,6 @@ permissions:
 jobs:
   news-radar:
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       - name: リポジトリをチェックアウト

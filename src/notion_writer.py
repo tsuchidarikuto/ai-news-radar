@@ -82,8 +82,13 @@ def _bulleted_link(title: str, url: str, suffix: str = "") -> dict:
     }
 
 
+_NOTION_BLOCK_LIMIT = 100
+
+
 def create_digest_page(digest: Digest) -> str:
     """Notion DB にダイジェストページを作成する。
+
+    Notion API の children 上限（100ブロック）を超える場合はバッチ追加する。
 
     Returns:
         作成されたページの URL。
@@ -96,14 +101,26 @@ def create_digest_page(digest: Digest) -> str:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     title = f"AI News - {today}"
 
+    all_children = _build_page_children(digest)
+    first_batch = all_children[:_NOTION_BLOCK_LIMIT]
+    remaining = all_children[_NOTION_BLOCK_LIMIT:]
+
     page = client.pages.create(
         parent={"database_id": database_id},
         properties={
             "Name": {"title": [{"text": {"content": title}}]},
             "Date": {"date": {"start": today}},
         },
-        children=_build_page_children(digest),
+        children=first_batch,
     )
+
+    page_id = page["id"]
+
+    # 100ブロック超はバッチで追加
+    while remaining:
+        batch = remaining[:_NOTION_BLOCK_LIMIT]
+        remaining = remaining[_NOTION_BLOCK_LIMIT:]
+        client.blocks.children.append(block_id=page_id, children=batch)
 
     page_url = page.get("url", "")
     logger.info("Created Notion page: %s", page_url)

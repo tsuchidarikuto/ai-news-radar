@@ -53,7 +53,11 @@ def main() -> None:
     digest = summarize_by_source(new_articles)
 
     # 4. Slack 概要を Gemini で生成（ダイジェスト全文をソースに）
-    slack_summary = generate_slack_summary(digest)
+    try:
+        slack_summary = generate_slack_summary(digest)
+    except Exception:
+        logger.warning("Failed to generate Slack summary, using fallback", exc_info=True)
+        slack_summary = ""
 
     if args.dry_run:
         print(format_dry_run(today, digest, slack_summary))
