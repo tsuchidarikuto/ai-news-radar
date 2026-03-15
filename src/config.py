@@ -29,6 +29,7 @@ def get_feeds() -> list[FeedSource]:
             name=f"Google Alerts #{i}",
             url=url,
             category="trend",
+            reselectable=True,
         ))
         i += 1
 

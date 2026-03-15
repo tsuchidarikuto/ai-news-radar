@@ -64,7 +64,7 @@ def main() -> None:
         return
 
     # 5. Notion にダイジェストページを作成（ルールベース結合）
-    notion_url = create_digest_page(digest)
+    notion_url = create_digest_page(digest, slack_summary)
 
     # 6. Slack に通知
     notify(today, slack_summary, digest, notion_url, best_pick_source)

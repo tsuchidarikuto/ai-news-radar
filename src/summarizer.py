@@ -24,14 +24,14 @@ logger = logging.getLogger(__name__)
 
 _client: genai.Client | None = None
 
-_FALLBACK_MODEL = "gemini-2.5-flash"
+_FALLBACK_MODEL = "gemini-2.5-flash-lite"
 _MAX_ARTICLES_PER_SOURCE = 20
 _MAX_RETRIES = 3
 _RETRY_BASE_DELAY = 5.0
 _INTER_CALL_DELAY = 12.0  # RPM 制限対策（free tier: flash=5RPM, flash-lite=10RPM）
 
 # ソース表示順
-SOURCE_ORDER = ["OpenAI", "Anthropic", "Google AI", "Claude Code", "Zenn", "Qiita"]
+SOURCE_ORDER = ["Zenn", "Qiita", "OpenAI", "Anthropic", "Google AI", "Claude Code"]
 
 
 @dataclass
@@ -65,7 +65,7 @@ def _get_client() -> genai.Client:
 
 
 def _get_model() -> str:
-    return os.environ.get("GEMINI_MODEL") or "gemini-2.5-flash-lite"
+    return os.environ.get("GEMINI_MODEL") or "gemini-3.1-flash-lite-preview"
 
 
 def _call_model(

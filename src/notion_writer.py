@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from notion_client import Client
 
-from src.summarizer import SOURCE_ORDER, Digest
+from src.summarizer import SOURCE_ORDER, Digest, PickedArticle
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +19,14 @@ def _get_client() -> Client:
     return Client(auth=api_key)
 
 
-def _build_page_children(digest: Digest) -> list[dict]:
+def _build_page_children(digest: Digest, summary: str = "") -> list[dict]:
     """ダイジェストの本文ブロックをルールベースで構築する。"""
     children: list[dict] = []
+
+    # 要約
+    if summary:
+        children.append(_heading2("要約"))
+        children.append(_paragraph(summary))
 
     # AI トレンド
     children.append(_heading2("AI トレンド"))
@@ -31,22 +36,25 @@ def _build_page_children(digest: Digest) -> list[dict]:
     else:
         children.append(_paragraph("該当なし"))
 
-    # ソース別ピックアップ（タイトル → 概要 → 生URL）
+    # ソース別ピックアップ（タイトル → 概要 → リンク）
     for source in SOURCE_ORDER:
+        children.append(_heading2(source))
         pick = digest.picks.get(source)
         if pick:
-            children.append(_heading2(f"{source}: {pick.title}"))
             children.append(_paragraph(pick.description))
-            children.append(_paragraph(pick.url))
+            children.append(_link_paragraph(pick.url))
         else:
-            children.append(_heading2(source))
             children.append(_paragraph("該当なし"))
 
-    # Sources（全参照記事）
-    if digest.all_sources:
+    # Sources（ピック済み記事のみ）
+    source_articles: list[PickedArticle] = []
+    source_articles.extend(digest.trends)
+    source_articles.extend(digest.picks.values())
+    if source_articles:
         children.append(_heading2("Sources"))
-        for a in digest.all_sources:
-            children.append(_bulleted_link(a.title, a.url, f"({a.source})"))
+        for a in source_articles:
+            suffix = f"({a.source})" if a.source else ""
+            children.append(_bulleted_link(a.title, a.url, suffix))
 
     return children
 
@@ -67,6 +75,18 @@ def _paragraph(text: str) -> dict:
     }
 
 
+def _link_paragraph(url: str) -> dict:
+    """URL をクリック可能なリンクとして表示するパラグラフブロック。"""
+    return {
+        "object": "block",
+        "type": "paragraph",
+        "paragraph": {
+            "rich_text": [
+                {"type": "text", "text": {"content": url, "link": {"url": url}}}
+            ]
+        },
+    }
+
 
 def _bulleted_link(title: str, url: str, suffix: str = "") -> dict:
     rich_text = [{"type": "text", "text": {"content": title, "link": {"url": url}}}]
@@ -82,7 +102,7 @@ def _bulleted_link(title: str, url: str, suffix: str = "") -> dict:
 _NOTION_BLOCK_LIMIT = 100
 
 
-def create_digest_page(digest: Digest) -> str:
+def create_digest_page(digest: Digest, summary: str = "") -> str:
     """Notion DB にダイジェストページを作成する。
 
     Notion API の children 上限（100ブロック）を超える場合はバッチ追加する。
@@ -98,7 +118,7 @@ def create_digest_page(digest: Digest) -> str:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     title = f"AI News - {today}"
 
-    all_children = _build_page_children(digest)
+    all_children = _build_page_children(digest, summary)
     first_batch = all_children[:_NOTION_BLOCK_LIMIT]
     remaining = all_children[_NOTION_BLOCK_LIMIT:]
 

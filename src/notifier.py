@@ -62,23 +62,25 @@ def _build_text(
 
     if slack_summary:
         parts.append("")
+        parts.append("*要約*")
         parts.append(slack_summary)
 
     # ピックアップ1本（Gemini が選出）
-    source, pick = _find_pick(digest, best_pick_source)
+    _, pick = _find_pick(digest, best_pick_source)
 
     parts.append("")
-    parts.append("---")
+    parts.append("*ピックアップ*")
     if pick:
-        parts.append(f"*Pick! {source}: <{pick.url}|{pick.title}>*")
+        parts.append(f"<{pick.url}|{pick.title}>")
         parts.append(pick.description)
     else:
         parts.append("本日のピックアップはありませんでした。")
 
-    # Notion リンク
+    # Notion リンク（ベタ貼りで unfurl 狙い）
     if notion_url:
         parts.append("")
-        parts.append(f"詳細はこちら: {notion_url}")
+        parts.append("詳細はこちら:")
+        parts.append(notion_url)
 
     return "\n".join(parts)
 
