@@ -40,13 +40,17 @@ def _build_text(
         parts.append("")
         parts.append(slack_summary)
 
-    # ピックアップ1本（最も注目度が高いもの）
+    # ピックアップ1本（tech ソース優先、なければ trend からフォールバック）
     top_pick = None
     for source in SOURCE_ORDER:
         pick = digest.picks.get(source)
         if pick:
             top_pick = (source, pick)
             break
+
+    if not top_pick and digest.trends:
+        t = digest.trends[0]
+        top_pick = ("AI トレンド", t)
 
     parts.append("")
     parts.append("---")
