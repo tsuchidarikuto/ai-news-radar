@@ -52,15 +52,15 @@ def _build_text(
     parts.append("---")
     if top_pick:
         source, pick = top_pick
-        parts.append(f"*[Pick] {source}: {pick.title}*")
+        parts.append(f"*Pick! {source}: <{pick.url}|{pick.title}>*")
         parts.append(pick.description)
     else:
         parts.append("本日のピックアップはありませんでした。")
 
-    # Notion URL ベタ貼り（Slack が unfurl してプレビュー表示）
+    # Notion リンク
     if notion_url:
         parts.append("")
-        parts.append(notion_url)
+        parts.append(f"詳細はこちら: <{notion_url}|Notion>")
 
     return "\n".join(parts)
 
