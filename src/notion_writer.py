@@ -109,7 +109,6 @@ def create_digest_page(digest: Digest) -> str:
         parent={"database_id": database_id},
         properties={
             "Name": {"title": [{"text": {"content": title}}]},
-            "Date": {"date": {"start": today}},
         },
         children=first_batch,
     )

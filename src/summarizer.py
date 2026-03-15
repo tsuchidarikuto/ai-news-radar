@@ -116,6 +116,13 @@ def _parse_json(raw_text: str) -> Any:
     try:
         return json.loads(text)
     except json.JSONDecodeError:
+        pass
+    # JSON 文字列内の生改行をエスケープしてリトライ
+    try:
+        import re
+        fixed = re.sub(r'(?<=": ")(.*?)(?="[,}])', lambda m: m.group(0).replace("\n", "\\n"), text, flags=re.DOTALL)
+        return json.loads(fixed)
+    except (json.JSONDecodeError, Exception):
         logger.error("Failed to parse JSON: %s", raw_text[:500])
         return None
 
