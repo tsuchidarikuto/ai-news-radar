@@ -71,7 +71,7 @@ def _paragraph(text: str) -> dict:
 def _bulleted_link(title: str, url: str, suffix: str = "") -> dict:
     rich_text = [{"type": "text", "text": {"content": title, "link": {"url": url}}}]
     if suffix:
-        rich_text.append({"type": "text", "text": {"content": f" {suffix}"}})
+        rich_text.append({"type": "text", "text": {"content": f"\n{suffix}"}})
     return {
         "object": "block",
         "type": "bulleted_list_item",
