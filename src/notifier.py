@@ -5,7 +5,7 @@ import os
 
 import requests
 
-from src.summarizer import Digest
+from src.summarizer import SOURCE_ORDER, Digest
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ _SLACK_SECTION_MAX_LENGTH = 3000
 
 
 def _split_text(text: str, max_length: int) -> list[str]:
-    """テキストを max_length 以下のチャンクに分割する。段落境界で分割を試みる。"""
+    """テキストを max_length 以下のチャンクに分割する。"""
     if len(text) <= max_length:
         return [text]
 
@@ -30,7 +30,9 @@ def _split_text(text: str, max_length: int) -> list[str]:
     return chunks
 
 
-def _build_blocks(date_str: str, digest: Digest, notion_url: str) -> list[dict]:
+def _build_blocks(
+    date_str: str, slack_summary: str, digest: Digest, notion_url: str
+) -> list[dict]:
     """Slack Block Kit メッセージを構築する。"""
     blocks: list[dict] = [
         {
@@ -42,27 +44,33 @@ def _build_blocks(date_str: str, digest: Digest, notion_url: str) -> list[dict]:
         },
     ]
 
-    # ダイジェスト本文（3000文字制限で分割）
-    for chunk in _split_text(digest.text, _SLACK_SECTION_MAX_LENGTH):
-        blocks.append({
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": chunk},
-        })
-
-    blocks.append({"type": "divider"})
-
-    # ソース記事リスト
-    if digest.sources:
-        source_lines = []
-        for s in digest.sources:
-            source_lines.append(f"- <{s.url}|{s.title}> ({s.source})")
-        source_text = "*Sources*\n" + "\n".join(source_lines)
-
-        for chunk in _split_text(source_text, _SLACK_SECTION_MAX_LENGTH):
+    # Gemini 生成の3行概要
+    if slack_summary:
+        for chunk in _split_text(slack_summary, _SLACK_SECTION_MAX_LENGTH):
             blocks.append({
                 "type": "section",
                 "text": {"type": "mrkdwn", "text": chunk},
             })
+
+    # ピックアップ1本（最初に見つかったもの）
+    top_pick = None
+    top_pick_source = ""
+    for source in SOURCE_ORDER:
+        if source in digest.picks:
+            top_pick = digest.picks[source]
+            top_pick_source = source
+            break
+
+    if top_pick:
+        blocks.append({"type": "divider"})
+        pick_text = (
+            f"*{top_pick_source}: <{top_pick.url}|{top_pick.title}>*\n"
+            f"{top_pick.description}"
+        )
+        blocks.append({
+            "type": "section",
+            "text": {"type": "mrkdwn", "text": pick_text},
+        })
 
     # Notion リンク
     if notion_url:
@@ -77,13 +85,15 @@ def _build_blocks(date_str: str, digest: Digest, notion_url: str) -> list[dict]:
     return blocks
 
 
-def notify(date_str: str, digest: Digest, notion_url: str) -> None:
+def notify(
+    date_str: str, slack_summary: str, digest: Digest, notion_url: str
+) -> None:
     """Slack にダイジェストを送信する。"""
     webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
     if not webhook_url:
         raise RuntimeError("SLACK_WEBHOOK_URL environment variable is not set")
 
-    blocks = _build_blocks(date_str, digest, notion_url)
+    blocks = _build_blocks(date_str, slack_summary, digest, notion_url)
     payload = {
         "blocks": blocks,
         "text": f"AI News Radar - {date_str}",
@@ -101,7 +111,7 @@ def notify_no_articles(date_str: str) -> None:
         raise RuntimeError("SLACK_WEBHOOK_URL environment variable is not set")
 
     payload = {
-        "text": f":information_source: 本日（{date_str}）の AI ニュースはありませんでした。",
+        "text": f"本日（{date_str}）の AI ニュースはありませんでした。",
     }
 
     response = requests.post(webhook_url, json=payload, timeout=30)
@@ -109,23 +119,37 @@ def notify_no_articles(date_str: str) -> None:
     logger.info("Slack notification sent: no articles for %s", date_str)
 
 
-def format_dry_run(date_str: str, digest: Digest, notion_url: str = "") -> str:
+def format_dry_run(
+    date_str: str, digest: Digest, slack_summary: str = ""
+) -> str:
     """dry-run 時の標準出力用テキストを生成する。"""
     lines = [f"=== AI News Radar - {date_str} ===", ""]
 
-    if not digest.text:
+    if not digest.trends and not digest.picks:
         lines.append("No AI news articles found today.")
         return "\n".join(lines)
 
-    lines.append(digest.text)
-    lines.append("")
-    lines.append("--- Sources ---")
-    for s in digest.sources:
-        lines.append(f"  - {s.title} ({s.source})")
-        lines.append(f"    {s.url}")
-
-    if notion_url:
+    if slack_summary:
+        lines.append("[Slack Summary]")
+        lines.append(slack_summary)
         lines.append("")
-        lines.append(f"Notion: {notion_url}")
+
+    if digest.trends:
+        lines.append("[AI Trends]")
+        for t in digest.trends:
+            lines.append(f"  - {t.title}")
+            lines.append(f"    {t.description}")
+            lines.append(f"    {t.url}")
+        lines.append("")
+
+    if digest.picks:
+        lines.append("[Picks]")
+        for source in SOURCE_ORDER:
+            pick = digest.picks.get(source)
+            if not pick:
+                continue
+            lines.append(f"  {source}: {pick.title}")
+            lines.append(f"    {pick.description}")
+            lines.append(f"    {pick.url}")
 
     return "\n".join(lines)

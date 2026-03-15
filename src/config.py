@@ -11,6 +11,7 @@ class FeedSource:
     name: str
     url: str
     feed_type: str = "rss"  # "rss", "atom", "html"
+    category: str = "tech"  # "tech" (個別ソース) or "trend" (Google Alerts)
 
 
 def get_feeds() -> list[FeedSource]:
@@ -23,7 +24,11 @@ def get_feeds() -> list[FeedSource]:
         url = os.environ.get(f"GOOGLE_ALERTS_RSS_{i}")
         if not url:
             break
-        feeds.append(FeedSource(name=f"Google Alerts #{i}", url=url))
+        feeds.append(FeedSource(
+            name=f"Google Alerts #{i}",
+            url=url,
+            category="trend",
+        ))
         i += 1
 
     return feeds
@@ -31,29 +36,29 @@ def get_feeds() -> list[FeedSource]:
 
 FEEDS: list[FeedSource] = [
     FeedSource(
-        name="OpenAI Blog",
+        name="OpenAI",
         url="https://openai.com/blog/rss.xml",
     ),
     FeedSource(
-        name="Anthropic News",
+        name="Anthropic",
         url="https://www.anthropic.com/news",
         feed_type="html",
     ),
     FeedSource(
-        name="Google AI Blog",
+        name="Google AI",
         url="https://blog.google/technology/ai/rss/",
     ),
     FeedSource(
-        name="Claude Code Releases",
+        name="Claude Code",
         url="https://github.com/anthropics/claude-code/releases.atom",
         feed_type="atom",
     ),
     FeedSource(
-        name="Zenn AI",
+        name="Zenn",
         url="https://zenn.dev/topics/ai/feed",
     ),
     FeedSource(
-        name="Qiita Popular",
+        name="Qiita",
         url="https://qiita.com/popular-items/feed",
         feed_type="atom",
     ),

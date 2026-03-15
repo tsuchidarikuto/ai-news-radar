@@ -1,4 +1,4 @@
-"""Notion DB へのダイジェストページ作成モジュール。"""
+"""Notion DB へのダイジェストページ作成モジュール（ルールベース結合）。"""
 
 import logging
 import os
@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from notion_client import Client
 
-from src.summarizer import Digest
+from src.summarizer import SOURCE_ORDER, Digest
 
 logger = logging.getLogger(__name__)
 
@@ -20,49 +20,66 @@ def _get_client() -> Client:
 
 
 def _build_page_children(digest: Digest) -> list[dict]:
-    """ダイジェストの本文ブロックを構築する。"""
+    """ダイジェストの本文ブロックをルールベースで構築する。"""
     children: list[dict] = []
 
-    # ダイジェスト本文を段落ごとに分割
-    for paragraph in digest.text.split("\n\n"):
-        paragraph = paragraph.strip()
-        if not paragraph:
+    # AI トレンド
+    if digest.trends:
+        children.append(_heading2("AI トレンド"))
+        for t in digest.trends:
+            children.append(_bulleted_link(t.title, t.url, t.description))
+
+    # ソース別ピックアップ
+    for source in SOURCE_ORDER:
+        pick = digest.picks.get(source)
+        if not pick:
             continue
-        children.append({
-            "object": "block",
-            "type": "paragraph",
-            "paragraph": {
-                "rich_text": [{"type": "text", "text": {"content": paragraph}}],
-            },
-        })
+        children.append(_heading2(source))
+        children.append(_bookmark(pick.url))
+        children.append(_paragraph(pick.description))
 
-    # ソース記事セクション
-    if digest.sources:
-        children.append({
-            "object": "block",
-            "type": "heading_2",
-            "heading_2": {
-                "rich_text": [{"type": "text", "text": {"content": "Sources"}}],
-            },
-        })
-
-        for source in digest.sources:
-            text_content = f"{source.title} ({source.source})"
-            children.append({
-                "object": "block",
-                "type": "bulleted_list_item",
-                "bulleted_list_item": {
-                    "rich_text": [{
-                        "type": "text",
-                        "text": {
-                            "content": text_content,
-                            "link": {"url": source.url} if source.url else None,
-                        },
-                    }],
-                },
-            })
+    # Sources（全参照記事）
+    if digest.all_sources:
+        children.append(_heading2("Sources"))
+        for a in digest.all_sources:
+            children.append(_bulleted_link(a.title, a.url, f"({a.source})"))
 
     return children
+
+
+def _heading2(text: str) -> dict:
+    return {
+        "object": "block",
+        "type": "heading_2",
+        "heading_2": {"rich_text": [{"type": "text", "text": {"content": text}}]},
+    }
+
+
+def _paragraph(text: str) -> dict:
+    return {
+        "object": "block",
+        "type": "paragraph",
+        "paragraph": {"rich_text": [{"type": "text", "text": {"content": text}}]},
+    }
+
+
+def _bookmark(url: str) -> dict:
+    return {
+        "object": "block",
+        "type": "bookmark",
+        "bookmark": {"url": url},
+    }
+
+
+def _bulleted_link(title: str, url: str, suffix: str = "") -> dict:
+    rich_text = [{"type": "text", "text": {"content": title, "link": {"url": url}}}]
+    if suffix:
+        rich_text.append({"type": "text", "text": {"content": f" {suffix}"}})
+    return {
+        "object": "block",
+        "type": "bulleted_list_item",
+        "bulleted_list_item": {"rich_text": rich_text},
+    }
 
 
 def create_digest_page(digest: Digest) -> str:

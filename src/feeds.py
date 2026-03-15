@@ -1,8 +1,9 @@
 """RSS/Atom/HTML フィード取得・パースモジュール。"""
 
 import logging
+import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from urllib.parse import parse_qs, urlparse
 
 import feedparser
 import requests
@@ -14,6 +15,12 @@ logger = logging.getLogger(__name__)
 
 _REQUEST_TIMEOUT = 30
 
+# Qiita の AI 関連キーワードフィルタ
+_AI_KEYWORDS = re.compile(
+    r"AI|LLM|GPT|Claude|Gemini|生成|機械学習|深層学習|ニューラル|transformer|diffusion|RAG|agent|ChatGPT|OpenAI|Anthropic",
+    re.IGNORECASE,
+)
+
 
 @dataclass
 class Article:
@@ -22,6 +29,7 @@ class Article:
     title: str
     url: str
     source: str
+    category: str = "tech"  # "tech" or "trend"
     description: str = ""
     published: str = ""
 
@@ -46,6 +54,16 @@ def fetch_all_feeds() -> list[Article]:
     return articles
 
 
+def _resolve_google_url(url: str) -> str:
+    """Google Alerts のリダイレクト URL から実際の URL を抽出する。"""
+    parsed = urlparse(url)
+    if parsed.hostname and "google.com" in parsed.hostname and parsed.path == "/url":
+        params = parse_qs(parsed.query)
+        if "url" in params:
+            return params["url"][0]
+    return url
+
+
 def _fetch_rss(feed: FeedSource) -> list[Article]:
     """RSS/Atom フィードをパースして Article リストを返す。"""
     response = requests.get(feed.url, timeout=_REQUEST_TIMEOUT)
@@ -55,10 +73,14 @@ def _fetch_rss(feed: FeedSource) -> list[Article]:
     articles: list[Article] = []
 
     for entry in parsed.entries:
-        title = entry.get("title", "").strip()
+        title = _strip_html(entry.get("title", "")).strip()
         link = entry.get("link", "").strip()
         if not title or not link:
             continue
+
+        # Google Alerts のリダイレクト URL を解決
+        if feed.category == "trend":
+            link = _resolve_google_url(link)
 
         description = ""
         if entry.get("summary"):
@@ -68,10 +90,16 @@ def _fetch_rss(feed: FeedSource) -> list[Article]:
 
         published = entry.get("published", "")
 
+        # Qiita: AI 関連キーワードで事前フィルタ
+        if feed.name == "Qiita":
+            if not _AI_KEYWORDS.search(title) and not _AI_KEYWORDS.search(description):
+                continue
+
         articles.append(Article(
             title=title,
             url=link,
             source=feed.name,
+            category=feed.category,
             description=description[:500],
             published=published,
         ))
@@ -87,7 +115,6 @@ def _fetch_html(feed: FeedSource) -> list[Article]:
     soup = BeautifulSoup(response.text, "html.parser")
     articles: list[Article] = []
 
-    # Anthropic News のリンク構造に対応
     for link_tag in soup.select("a[href*='/news/']"):
         href = link_tag.get("href", "")
         if not href or href == "/news/" or href == "/news":
@@ -99,7 +126,6 @@ def _fetch_html(feed: FeedSource) -> list[Article]:
 
         url = href if href.startswith("http") else "https://www.anthropic.com" + href
 
-        # 重複排除（同一 URL の複数リンク）
         if any(a.url == url for a in articles):
             continue
 
@@ -107,6 +133,7 @@ def _fetch_html(feed: FeedSource) -> list[Article]:
             title=title,
             url=url,
             source=feed.name,
+            category=feed.category,
         ))
 
     return articles

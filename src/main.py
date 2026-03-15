@@ -12,7 +12,7 @@ from src.feeds import fetch_all_feeds
 from src.notion_writer import create_digest_page
 from src.notifier import format_dry_run, notify, notify_no_articles
 from src.state import filter_new_articles, load_state, mark_processed, save_state
-from src.summarizer import generate_digest
+from src.summarizer import generate_slack_summary, summarize_by_source
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,20 +49,23 @@ def main() -> None:
 
     logger.info("Processing %d new article(s)", len(new_articles))
 
-    # 3. Gemini でダイジェスト生成
-    digest = generate_digest(new_articles)
+    # 3. ソース別 Gemini ダイジェスト生成（各ソース独立に1回ずつ呼び出し）
+    digest = summarize_by_source(new_articles)
+
+    # 4. Slack 概要を Gemini で生成（ダイジェスト全文をソースに）
+    slack_summary = generate_slack_summary(digest)
 
     if args.dry_run:
-        print(format_dry_run(today, digest))
+        print(format_dry_run(today, digest, slack_summary))
         return
 
-    # 4. Notion にダイジェストページを作成
+    # 5. Notion にダイジェストページを作成（ルールベース結合）
     notion_url = create_digest_page(digest)
 
-    # 5. Slack に通知
-    notify(today, digest, notion_url)
+    # 6. Slack に通知
+    notify(today, slack_summary, digest, notion_url)
 
-    # 6. state を更新・保存
+    # 7. state を更新・保存
     state = mark_processed(state, new_articles)
     save_state(state)
 
