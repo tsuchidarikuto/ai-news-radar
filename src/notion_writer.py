@@ -29,14 +29,14 @@ def _build_page_children(digest: Digest) -> list[dict]:
         for t in digest.trends:
             children.append(_bulleted_link(t.title, t.url, t.description))
 
-    # ソース別ピックアップ
+    # ソース別ピックアップ（タイトル → 概要 → 生URL）
     for source in SOURCE_ORDER:
         pick = digest.picks.get(source)
         if not pick:
             continue
-        children.append(_heading2(source))
-        children.append(_bookmark(pick.url))
+        children.append(_heading2(f"{source}: {pick.title}"))
         children.append(_paragraph(pick.description))
+        children.append(_paragraph(pick.url))
 
     # Sources（全参照記事）
     if digest.all_sources:
@@ -62,13 +62,6 @@ def _paragraph(text: str) -> dict:
         "paragraph": {"rich_text": [{"type": "text", "text": {"content": text}}]},
     }
 
-
-def _bookmark(url: str) -> dict:
-    return {
-        "object": "block",
-        "type": "bookmark",
-        "bookmark": {"url": url},
-    }
 
 
 def _bulleted_link(title: str, url: str, suffix: str = "") -> dict:
