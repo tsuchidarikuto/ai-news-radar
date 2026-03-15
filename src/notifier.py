@@ -40,24 +40,20 @@ def _build_text(
         parts.append("")
         parts.append(slack_summary)
 
-    # ピックアップ（全ソース、URL ベタ貼りで unfurl）
-    picks_parts: list[str] = []
+    # ピックアップ1本（最も注目度が高いもの）
     for source in SOURCE_ORDER:
         pick = digest.picks.get(source)
-        if not pick:
-            continue
-        picks_parts.append(f"*[Pick] {source}: {pick.title}*")
-        picks_parts.append(pick.description)
-        picks_parts.append(pick.url)
-        picks_parts.append("")
+        if pick:
+            parts.append("")
+            parts.append("---")
+            parts.append(f"*[Pick] {source}: {pick.title}*")
+            parts.append(pick.description)
+            break
 
-    if picks_parts:
-        parts.append("")
-        parts.append("---")
-        parts.extend(picks_parts)
-
+    # Notion URL ベタ貼り（Slack が unfurl してプレビュー表示）
     if notion_url:
-        parts.append(f"<{notion_url}|Notion で全文を見る>")
+        parts.append("")
+        parts.append(notion_url)
 
     return "\n".join(parts)
 
