@@ -1,5 +1,5 @@
 {
-  "last_checked": "2026-03-15T03:43:01.254952+00:00",
+  "last_checked": "2026-03-15T03:09:37.467418+00:00",
   "seen_urls": {
     "https://openai.com/index/rakuten": "2026-03-15",
     "https://openai.com/index/designing-agents-to-resist-prompt-injection": "2026-03-15",
@@ -970,12 +970,6 @@
     "https://qiita.com/76Hata/items/81fed794acef9adb82c6?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-03-15",
     "https://qiita.com/yukurash/items/0478cbae148a5d15cfb5?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-03-15",
     "https://qiita.com/mhamadajp/items/85659bb3c104c4279539?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-03-15",
-    "https://36kr.jp/460364/": "2026-03-15",
-    "https://prtimes.jp/main/html/rd/p/000000436.000098210.html": "2026-03-15",
-    "https://www.nikkei.com/compass/content/PRTKDB000000037_000164574/preview": "2026-03-15",
-    "https://news.yahoo.co.jp/articles/89517c8c4804114707dad0590df4a30558041d57": "2026-03-15",
-    "https://forbesjapan.com/articles/detail/93792": "2026-03-15",
-    "https://forbesjapan.com/articles/detail/93779": "2026-03-15",
     "https://news.yahoo.co.jp/articles/2e29fc371a1d22cc371fb1f60aa77cc623733dd1": "2026-03-15",
     "https://www.47news.jp/13996082.html": "2026-03-15",
     "https://diamond.jp/articles/amp/385646": "2026-03-15",
@@ -989,16 +983,22 @@
     "https://www.advertimes.com/20260313/article536791/": "2026-03-15",
     "https://forbesjapan.com/articles/detail/93564": "2026-03-15",
     "https://kabutan.jp/news/marketnews/?b=n202603140222": "2026-03-15",
-    "https://gigazine.net/news/20260314-xbox-gaming-copilot-current-generation-consoles/": "2026-03-15"
+    "https://gigazine.net/news/20260314-xbox-gaming-copilot-current-generation-consoles/": "2026-03-15",
+    "https://diamond.jp/articles/-/385853?page=4": "2026-03-15",
+    "https://www.agrinews.co.jp/news/prtimes/368136": "2026-03-15",
+    "https://news.yahoo.co.jp/articles/0d05deec61569c7b0a456527a30ec474b3c28da8?page=2": "2026-03-15",
+    "https://jp.wsj.com/articles/musk-says-xai-must-be-rebuilt-as-co-founders-exit-4ef147a4": "2026-03-15",
+    "https://www.gamespark.jp/article/2026/03/14/163925.html": "2026-03-15",
+    "https://dime.jp/genre/2029457/": "2026-03-15",
+    "https://36kr.jp/460364/": "2026-03-15",
+    "https://prtimes.jp/main/html/rd/p/000000436.000098210.html": "2026-03-15",
+    "https://www.nikkei.com/compass/content/PRTKDB000000037_000164574/preview": "2026-03-15",
+    "https://news.yahoo.co.jp/articles/89517c8c4804114707dad0590df4a30558041d57": "2026-03-15",
+    "https://forbesjapan.com/articles/detail/93792": "2026-03-15",
+    "https://forbesjapan.com/articles/detail/93779": "2026-03-15"
   },
   "picked_urls": {
-    "https://blogs.itmedia.co.jp/business20/2026/03/ai5500.html": "2026-03-15",
-    "https://www.advertimes.com/20260313/article536791/": "2026-03-15",
     "https://zenn.dev/happy_onigiri/articles/2df24dbfb9264a": "2026-03-15",
-    "https://qiita.com/nogataka/items/f3b92f07929f1ab9d67e?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-03-15",
-    "https://openai.com/index/introducing-gpt-5-4": "2026-03-15",
-    "https://www.anthropic.com/news/claude-sonnet-4-6": "2026-03-15",
-    "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-deep-think/": "2026-03-15",
-    "https://github.com/anthropics/claude-code/releases/tag/v2.1.76": "2026-03-15"
+    "https://qiita.com/nogataka/items/9924c97a74f63c5452eb?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-03-15"
   }
 }
