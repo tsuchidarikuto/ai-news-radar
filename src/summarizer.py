@@ -14,6 +14,7 @@ from google.genai.errors import ClientError, ServerError
 
 from src.feeds import Article
 from src.prompts import (
+    ARXIV_SUMMARY_PROMPT,
     CLAUDE_CODE_PROMPT,
     SLACK_SUMMARY_PROMPT,
     TECH_SOURCE_PROMPT,
@@ -191,6 +192,34 @@ def summarize_trends(articles: list[Article]) -> list[PickedArticle]:
             description=t.get("description", ""),
         )
         for t in data
+    ]
+
+
+def summarize_arxiv(articles: list[Article]) -> list[PickedArticle]:
+    """arXiv 論文から注目論文を3本ピックアップする。"""
+    if not articles:
+        return []
+
+    client = _get_client()
+    model = _get_model()
+
+    content = _articles_to_json(articles)
+
+    logger.info("Summarizing arXiv papers (%d articles)", len(articles))
+    raw = _call_model(client, model, content, ARXIV_SUMMARY_PROMPT)
+    data = _parse_json(raw)
+
+    if not data or not isinstance(data, list):
+        return []
+
+    return [
+        PickedArticle(
+            title=p.get("title", ""),
+            url=p.get("url", ""),
+            description=p.get("description", ""),
+            source="arXiv",
+        )
+        for p in data
     ]
 
 

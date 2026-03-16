@@ -36,6 +36,25 @@ def get_feeds() -> list[FeedSource]:
     return feeds
 
 
+ARXIV_FEEDS: list[FeedSource] = [
+    FeedSource(
+        name="arXiv cs.AI",
+        url="https://rss.arxiv.org/rss/cs.AI",
+        category="arxiv",
+    ),
+    FeedSource(
+        name="arXiv cs.LG",
+        url="https://rss.arxiv.org/rss/cs.LG",
+        category="arxiv",
+    ),
+    FeedSource(
+        name="arXiv cs.CL",
+        url="https://rss.arxiv.org/rss/cs.CL",
+        category="arxiv",
+    ),
+]
+
+
 FEEDS: list[FeedSource] = [
     FeedSource(
         name="OpenAI",

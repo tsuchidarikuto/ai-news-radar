@@ -121,6 +121,28 @@ def notify_no_articles(date_str: str) -> None:
     logger.info("Slack notification sent: no articles for %s", date_str)
 
 
+def notify_arxiv(date_str: str, picks: list) -> None:
+    """arXiv 論文ハイライトを #arxiv-posts チャンネルに送信する。"""
+    webhook_url = os.environ.get("ARXIV_SLACK_WEBHOOK_URL")
+    if not webhook_url:
+        logger.warning("ARXIV_SLACK_WEBHOOK_URL is not set, skipping arXiv notification")
+        return
+
+    if not picks:
+        payload = {"text": f"本日（{date_str}）の注目arXiv論文はありませんでした。"}
+    else:
+        lines = [f"*arXiv 論文ハイライト - {date_str}*", ""]
+        for i, pick in enumerate(picks, 1):
+            lines.append(f"{i}. <{pick.url}|{pick.title}>")
+            lines.append(f"   {pick.description}")
+            lines.append("")
+        payload = {"text": "\n".join(lines), "unfurl_links": False}
+
+    response = requests.post(webhook_url, json=payload, timeout=30)
+    response.raise_for_status()
+    logger.info("arXiv Slack notification sent for %s", date_str)
+
+
 def format_dry_run(
     date_str: str, digest: Digest, slack_summary: str = ""
 ) -> str:

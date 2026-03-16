@@ -8,11 +8,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from src.config import ARXIV_FEEDS
 from src.feeds import fetch_all_feeds
+from src.feeds import _fetch_rss as _fetch_feed_rss  # noqa: PLC2701
 from src.notion_writer import create_digest_page
-from src.notifier import format_dry_run, notify, notify_no_articles
+from src.notifier import format_dry_run, notify, notify_arxiv, notify_no_articles
 from src.state import filter_new_articles, load_state, mark_processed, save_state
-from src.summarizer import generate_slack_summary, summarize_by_source
+from src.summarizer import generate_slack_summary, summarize_arxiv, summarize_by_source
 
 logging.basicConfig(
     level=logging.INFO,
