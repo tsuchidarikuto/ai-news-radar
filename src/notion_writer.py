@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from notion_client import Client
 
+from src.feeds import Article
 from src.summarizer import SOURCE_ORDER, Digest
 
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ def _build_page_children(digest: Digest) -> list[dict]:
     if digest.kept_trends:
         children.append(_heading2("AI トレンド"))
         for a in digest.kept_trends:
-            children.append(_bulleted_link(a.title, a.url))
+            children.append(_article_bullet(a))
 
     for source in SOURCE_ORDER:
         items = digest.kept_by_source.get(source) or []
@@ -34,7 +35,7 @@ def _build_page_children(digest: Digest) -> list[dict]:
             continue
         children.append(_heading2(source))
         for a in items:
-            children.append(_bulleted_link(a.title, a.url))
+            children.append(_article_bullet(a))
 
     return children
 
@@ -47,15 +48,19 @@ def _heading2(text: str) -> dict:
     }
 
 
-def _bulleted_link(title: str, url: str) -> dict:
+def _article_bullet(article: Article) -> dict:
+    """タイトル（リンク）＋改行＋概要 の箇条書きブロック。"""
+    rich_text: list[dict] = [
+        {"type": "text", "text": {"content": article.title, "link": {"url": article.url}}}
+    ]
+    if article.description:
+        rich_text.append(
+            {"type": "text", "text": {"content": f"\n{article.description}"}}
+        )
     return {
         "object": "block",
         "type": "bulleted_list_item",
-        "bulleted_list_item": {
-            "rich_text": [
-                {"type": "text", "text": {"content": title, "link": {"url": url}}}
-            ]
-        },
+        "bulleted_list_item": {"rich_text": rich_text},
     }
 
 

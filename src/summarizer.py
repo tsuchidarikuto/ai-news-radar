@@ -156,8 +156,16 @@ def filter_articles(articles: list[Article], label: str) -> list[Article]:
     if not isinstance(kept_urls, list):
         return []
 
-    kept_set = {u for u in kept_urls if isinstance(u, str)}
-    result = [a for a in articles if a.url in kept_set]
+    url_to_article = {a.url: a for a in articles}
+    result: list[Article] = []
+    seen: set[str] = set()
+    for url in kept_urls:
+        if not isinstance(url, str) or url in seen:
+            continue
+        article = url_to_article.get(url)
+        if article is not None:
+            result.append(article)
+            seen.add(url)
     logger.info("Kept %d/%d articles for %s", len(result), len(articles), label)
     return result
 
