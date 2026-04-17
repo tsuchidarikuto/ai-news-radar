@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from notion_client import Client
 
-from src.summarizer import SOURCE_ORDER, Digest, PickedArticle
+from src.summarizer import SOURCE_ORDER, Digest
 
 logger = logging.getLogger(__name__)
 
@@ -19,42 +19,22 @@ def _get_client() -> Client:
     return Client(auth=api_key)
 
 
-def _build_page_children(digest: Digest, summary: str = "") -> list[dict]:
+def _build_page_children(digest: Digest) -> list[dict]:
     """ダイジェストの本文ブロックをルールベースで構築する。"""
     children: list[dict] = []
 
-    # 要約
-    if summary:
-        children.append(_heading2("要約"))
-        children.append(_paragraph(summary))
+    if digest.kept_trends:
+        children.append(_heading2("AI トレンド"))
+        for a in digest.kept_trends:
+            children.append(_bulleted_link(a.title, a.url))
 
-    # AI トレンド
-    children.append(_heading2("AI トレンド"))
-    if digest.trends:
-        for t in digest.trends:
-            children.append(_bulleted_link(t.title, t.url, t.description))
-    else:
-        children.append(_paragraph("該当なし"))
-
-    # ソース別ピックアップ（タイトル → 概要 → リンク）
     for source in SOURCE_ORDER:
+        items = digest.kept_by_source.get(source) or []
+        if not items:
+            continue
         children.append(_heading2(source))
-        pick = digest.picks.get(source)
-        if pick:
-            children.append(_paragraph(pick.description))
-            children.append(_link_paragraph(pick.url))
-        else:
-            children.append(_paragraph("該当なし"))
-
-    # Sources（ピック済み記事のみ）
-    source_articles: list[PickedArticle] = []
-    source_articles.extend(digest.trends)
-    source_articles.extend(digest.picks.values())
-    if source_articles:
-        children.append(_heading2("Sources"))
-        for a in source_articles:
-            suffix = f"({a.source})" if a.source else ""
-            children.append(_bulleted_link(a.title, a.url, suffix))
+        for a in items:
+            children.append(_bulleted_link(a.title, a.url))
 
     return children
 
@@ -67,42 +47,22 @@ def _heading2(text: str) -> dict:
     }
 
 
-def _paragraph(text: str) -> dict:
-    return {
-        "object": "block",
-        "type": "paragraph",
-        "paragraph": {"rich_text": [{"type": "text", "text": {"content": text}}]},
-    }
-
-
-def _link_paragraph(url: str) -> dict:
-    """URL をクリック可能なリンクとして表示するパラグラフブロック。"""
-    return {
-        "object": "block",
-        "type": "paragraph",
-        "paragraph": {
-            "rich_text": [
-                {"type": "text", "text": {"content": url, "link": {"url": url}}}
-            ]
-        },
-    }
-
-
-def _bulleted_link(title: str, url: str, suffix: str = "") -> dict:
-    rich_text = [{"type": "text", "text": {"content": title, "link": {"url": url}}}]
-    if suffix:
-        rich_text.append({"type": "text", "text": {"content": f"\n{suffix}"}})
+def _bulleted_link(title: str, url: str) -> dict:
     return {
         "object": "block",
         "type": "bulleted_list_item",
-        "bulleted_list_item": {"rich_text": rich_text},
+        "bulleted_list_item": {
+            "rich_text": [
+                {"type": "text", "text": {"content": title, "link": {"url": url}}}
+            ]
+        },
     }
 
 
 _NOTION_BLOCK_LIMIT = 100
 
 
-def create_digest_page(digest: Digest, summary: str = "") -> str:
+def create_digest_page(digest: Digest) -> str:
     """Notion DB にダイジェストページを作成する。
 
     Notion API の children 上限（100ブロック）を超える場合はバッチ追加する。
@@ -118,7 +78,7 @@ def create_digest_page(digest: Digest, summary: str = "") -> str:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     title = f"AI News - {today}"
 
-    all_children = _build_page_children(digest, summary)
+    all_children = _build_page_children(digest)
     first_batch = all_children[:_NOTION_BLOCK_LIMIT]
     remaining = all_children[_NOTION_BLOCK_LIMIT:]
 

@@ -12,7 +12,7 @@ from src.feeds import fetch_all_feeds
 from src.notion_writer import create_digest_page
 from src.notifier import format_dry_run, notify, notify_no_articles
 from src.state import filter_new_articles, load_state, mark_processed, save_state
-from src.summarizer import generate_slack_summary, summarize_by_source
+from src.summarizer import build_digest
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,33 +49,29 @@ def main() -> None:
 
     logger.info("Processing %d new article(s)", len(new_articles))
 
-    # 3. ソース別 Gemini ダイジェスト生成（各ソース独立に1回ずつ呼び出し）
-    digest = summarize_by_source(new_articles)
-
-    # 4. Slack 概要 + ピック選出を Gemini で生成
-    try:
-        slack_summary, best_pick_source = generate_slack_summary(digest)
-    except Exception:
-        logger.warning("Failed to generate Slack summary, using fallback", exc_info=True)
-        slack_summary, best_pick_source = "", ""
+    # 3. trend / Zenn / Qiita は LLM フィルタ、それ以外は全件採用
+    digest = build_digest(new_articles)
 
     if args.dry_run:
-        print(format_dry_run(today, digest, slack_summary))
+        print(format_dry_run(today, digest))
         return
 
-    # 5. Notion にダイジェストページを作成（ルールベース結合）
-    notion_url = create_digest_page(digest, slack_summary)
+    # 全件フィルタ落ちケース
+    if not digest.kept_trends and not any(digest.kept_by_source.values()):
+        logger.info("All articles filtered out")
+        notify_no_articles(today)
+        return
 
-    # 6. Slack に通知
-    notify(today, slack_summary, digest, notion_url, best_pick_source)
+    # 4. Notion にダイジェストページを作成
+    notion_url = create_digest_page(digest)
 
-    # 7. state を更新・保存
-    # picked: Notion に書いた記事のみ（trends + picks の URL）
-    picked_articles = []
-    for t in digest.trends:
-        picked_articles.extend(a for a in new_articles if a.url == t.url)
-    for pick in digest.picks.values():
-        picked_articles.extend(a for a in new_articles if a.url == pick.url)
+    # 5. Slack に通知
+    notify(today, digest, notion_url)
+
+    # 6. state を更新・保存（Slack/Notion に出した記事のみ picked 扱い）
+    picked_articles = list(digest.kept_trends)
+    for items in digest.kept_by_source.values():
+        picked_articles.extend(items)
     state = mark_processed(state, new_articles, picked_articles)
     save_state(state)
 

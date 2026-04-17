@@ -13,12 +13,7 @@ from google.genai import types
 from google.genai.errors import ClientError, ServerError
 
 from src.feeds import Article
-from src.prompts import (
-    CLAUDE_CODE_PROMPT,
-    SLACK_SUMMARY_PROMPT,
-    TECH_SOURCE_PROMPT,
-    TREND_PROMPT,
-)
+from src.prompts import FILTER_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -33,23 +28,16 @@ _INTER_CALL_DELAY = 12.0  # RPM 制限対策（free tier: flash=5RPM, flash-lite
 # ソース表示順
 SOURCE_ORDER = ["Zenn", "Qiita", "OpenAI", "Anthropic", "Google AI", "Claude Code"]
 
-
-@dataclass
-class PickedArticle:
-    """ピックアップされた記事。"""
-
-    title: str
-    url: str
-    description: str
-    source: str = ""
+# LLM フィルタを掛けるテックソース（tech 系のうち絞り込む対象）
+FILTERED_SOURCES = {"Zenn", "Qiita"}
 
 
 @dataclass
 class Digest:
-    """ソース別ダイジェスト（ルールベースで結合）。"""
+    """フィルタ後のダイジェスト。"""
 
-    trends: list[PickedArticle]
-    picks: dict[str, PickedArticle]
+    kept_by_source: dict[str, list[Article]]
+    kept_trends: list[Article]
     all_sources: list[Article] = field(default_factory=list)
 
 
@@ -140,62 +128,42 @@ def _articles_to_json(
     return json.dumps(items, ensure_ascii=False)
 
 
-def summarize_source(articles: list[Article], source: str) -> PickedArticle | None:
-    """一つのテックソースから最も注目すべき記事を1本ピックアップする。"""
-    if not articles:
-        return None
+def filter_articles(articles: list[Article], label: str) -> list[Article]:
+    """LLM に記事をフィルタさせ、残すべき記事のみ返す。
 
-    client = _get_client()
-    model = _get_model()
-
-    prompt = CLAUDE_CODE_PROMPT if source == "Claude Code" else TECH_SOURCE_PROMPT
-    content = f"以下は {source} の記事です:\n{_articles_to_json(articles)}"
-
-    logger.info("Summarizing %s (%d articles)", source, len(articles))
-    raw = _call_model(client, model, content, prompt)
-    data = _parse_json(raw)
-
-    if not data:
-        return None
-
-    return PickedArticle(
-        title=data.get("title", ""),
-        url=data.get("url", ""),
-        description=data.get("description", ""),
-        source=source,
-    )
-
-
-def summarize_trends(articles: list[Article]) -> list[PickedArticle]:
-    """Google Alerts からトレンド記事を3本ピックアップする。"""
+    ハルシネーション対策のため、返ってきた URL が入力に含まれるものだけ採用する。
+    """
     if not articles:
         return []
 
     client = _get_client()
     model = _get_model()
 
-    # Google Alerts は title のみ渡す（トークン節約）
-    content = _articles_to_json(articles, include_description=False)
+    content = _articles_to_json(articles)
 
-    logger.info("Summarizing trends (%d articles)", len(articles))
-    raw = _call_model(client, model, content, TREND_PROMPT)
-    data = _parse_json(raw)
-
-    if not data or not isinstance(data, list):
+    logger.info("Filtering %s (%d articles)", label, len(articles))
+    try:
+        raw = _call_model(client, model, content, FILTER_PROMPT)
+    except Exception:
+        logger.error("Failed to filter %s", label, exc_info=True)
         return []
 
-    return [
-        PickedArticle(
-            title=t.get("title", ""),
-            url=t.get("url", ""),
-            description=t.get("description", ""),
-        )
-        for t in data
-    ]
+    data = _parse_json(raw)
+    if not data or not isinstance(data, dict):
+        return []
+
+    kept_urls = data.get("urls") or []
+    if not isinstance(kept_urls, list):
+        return []
+
+    kept_set = {u for u in kept_urls if isinstance(u, str)}
+    result = [a for a in articles if a.url in kept_set]
+    logger.info("Kept %d/%d articles for %s", len(result), len(articles), label)
+    return result
 
 
-def summarize_by_source(articles: list[Article]) -> Digest:
-    """全記事をソース別に分割し、それぞれ Gemini で要約する。"""
+def build_digest(articles: list[Article]) -> Digest:
+    """記事リストを trend / tech に振り分け、対象ソースは LLM でフィルタする。"""
     by_source: dict[str, list[Article]] = defaultdict(list)
     trend_articles: list[Article] = []
 
@@ -205,66 +173,27 @@ def summarize_by_source(articles: list[Article]) -> Digest:
         else:
             by_source[a.source].append(a)
 
-    # トレンド（Google Alerts）
-    trends: list[PickedArticle] = []
-    try:
-        trends = summarize_trends(trend_articles)
-    except Exception:
-        logger.error("Failed to summarize trends", exc_info=True)
+    # AI トレンド（Google Alerts）
+    kept_trends = filter_articles(trend_articles, "AI トレンド")
 
-    # テックソース別（RPM 制限対策でディレイを挟む）
-    picks: dict[str, PickedArticle] = {}
+    # テックソース別
+    kept_by_source: dict[str, list[Article]] = {}
     for source in SOURCE_ORDER:
-        if source not in by_source:
+        src_articles = by_source.get(source) or []
+        if not src_articles:
             continue
-        time.sleep(_INTER_CALL_DELAY)
-        try:
-            pick = summarize_source(by_source[source], source)
-            if pick:
-                picks[source] = pick
-        except Exception:
-            logger.error("Failed to summarize %s", source, exc_info=True)
 
-    return Digest(trends=trends, picks=picks, all_sources=articles)
+        if source in FILTERED_SOURCES:
+            time.sleep(_INTER_CALL_DELAY)
+            kept = filter_articles(src_articles, source)
+        else:
+            kept = src_articles[:_MAX_ARTICLES_PER_SOURCE]
 
+        if kept:
+            kept_by_source[source] = kept
 
-def build_digest_text(digest: Digest) -> str:
-    """Digest をテキストに変換する（Slack summary 用）。"""
-    parts: list[str] = []
-
-    if digest.trends:
-        parts.append("## AI トレンド")
-        for t in digest.trends:
-            parts.append(f"- {t.title}: {t.description}")
-
-    for source in SOURCE_ORDER:
-        pick = digest.picks.get(source)
-        if not pick:
-            continue
-        parts.append(f"\n## {source}: {pick.title}")
-        parts.append(pick.description)
-
-    return "\n".join(parts)
-
-
-def generate_slack_summary(digest: Digest) -> tuple[str, str]:
-    """ダイジェスト全体から Slack 用の3行概要と best pick を生成する。
-
-    Returns:
-        (summary, best_pick_source) のタプル。
-    """
-    text = build_digest_text(digest)
-    if not text:
-        return "", ""
-
-    client = _get_client()
-    model = _get_model()
-
-    logger.info("Generating Slack summary")
-    raw = _call_model(client, model, text, SLACK_SUMMARY_PROMPT)
-    data = _parse_json(raw)
-
-    if not data:
-        return "", ""
-
-    return data.get("summary", ""), data.get("best_pick", "")
+    return Digest(
+        kept_by_source=kept_by_source,
+        kept_trends=kept_trends,
+        all_sources=articles,
+    )
