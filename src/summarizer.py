@@ -13,7 +13,7 @@ from google.genai import types
 from google.genai.errors import ClientError, ServerError
 
 from src.feeds import Article
-from src.prompts import FILTER_PROMPT
+from src.prompts import FILTER_AND_SUMMARIZE_PROMPT, SUMMARIZE_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -128,50 +128,98 @@ def _articles_to_json(
     return json.dumps(items, ensure_ascii=False)
 
 
-def filter_articles(articles: list[Article], label: str) -> list[Article]:
-    """LLM に記事をフィルタさせ、残すべき記事のみ返す。
+def _parse_items(raw: str) -> list[dict]:
+    """Gemini の {"items": [...]} レスポンスを dict リストに変換する。"""
+    data = _parse_json(raw)
+    if not isinstance(data, dict):
+        return []
+    items = data.get("items")
+    if not isinstance(items, list):
+        return []
+    return [i for i in items if isinstance(i, dict)]
 
-    ハルシネーション対策のため、返ってきた URL が入力に含まれるものだけ採用する。
+
+def _apply_summary(article: Article, summary: Any) -> None:
+    """Gemini 要約で article.description を上書きする（空文字・非 str は無視）。"""
+    if isinstance(summary, str) and summary.strip():
+        article.description = summary.strip()
+
+
+def filter_and_summarize(articles: list[Article], label: str) -> list[Article]:
+    """Gemini で記事を選別し、残す記事に 1 文要約を付与する。
+
+    要約は article.description を上書きする形で埋め込む。
+    失敗・該当なしの場合は空リストを返す。
     """
     if not articles:
         return []
 
     client = _get_client()
     model = _get_model()
-
     content = _articles_to_json(articles)
 
-    logger.info("Filtering %s (%d articles)", label, len(articles))
+    logger.info("Filter+summarize %s (%d articles)", label, len(articles))
     try:
-        raw = _call_model(client, model, content, FILTER_PROMPT)
+        raw = _call_model(client, model, content, FILTER_AND_SUMMARIZE_PROMPT)
     except Exception:
-        logger.error("Failed to filter %s", label, exc_info=True)
-        return []
-
-    data = _parse_json(raw)
-    if not data or not isinstance(data, dict):
-        return []
-
-    kept_urls = data.get("urls") or []
-    if not isinstance(kept_urls, list):
+        logger.error("Failed to filter+summarize %s", label, exc_info=True)
         return []
 
     url_to_article = {a.url: a for a in articles}
     result: list[Article] = []
     seen: set[str] = set()
-    for url in kept_urls:
+    for item in _parse_items(raw):
+        url = item.get("url")
         if not isinstance(url, str) or url in seen:
             continue
         article = url_to_article.get(url)
-        if article is not None:
-            result.append(article)
-            seen.add(url)
-    logger.info("Kept %d/%d articles for %s", len(result), len(articles), label)
+        if article is None:
+            continue
+        _apply_summary(article, item.get("summary"))
+        result.append(article)
+        seen.add(url)
+
+    logger.info("Kept %d/%d for %s", len(result), len(articles), label)
     return result
 
 
+def summarize_articles(articles: list[Article], label: str) -> list[Article]:
+    """全記事に 1 文要約を付与して返す。
+
+    Gemini 呼出が失敗した場合は元の description を残したまま全件返す。
+    """
+    if not articles:
+        return []
+
+    client = _get_client()
+    model = _get_model()
+    content = _articles_to_json(articles)
+
+    logger.info("Summarize %s (%d articles)", label, len(articles))
+    try:
+        raw = _call_model(client, model, content, SUMMARIZE_PROMPT)
+    except Exception:
+        logger.error("Failed to summarize %s", label, exc_info=True)
+        return articles
+
+    url_to_summary: dict[str, str] = {}
+    for item in _parse_items(raw):
+        url = item.get("url")
+        summary = item.get("summary")
+        if isinstance(url, str) and isinstance(summary, str) and summary.strip():
+            url_to_summary[url] = summary.strip()
+
+    for a in articles:
+        summary = url_to_summary.get(a.url)
+        if summary:
+            a.description = summary
+
+    logger.info("Summarized %d/%d for %s", len(url_to_summary), len(articles), label)
+    return articles
+
+
 def build_digest(articles: list[Article]) -> Digest:
-    """記事リストを trend / tech に振り分け、対象ソースは LLM でフィルタする。"""
+    """記事を trend / tech に振り分け、Gemini で選別＋要約する。"""
     by_source: dict[str, list[Article]] = defaultdict(list)
     trend_articles: list[Article] = []
 
@@ -181,21 +229,22 @@ def build_digest(articles: list[Article]) -> Digest:
         else:
             by_source[a.source].append(a)
 
-    # AI トレンド（Google Alerts）
-    kept_trends = filter_articles(trend_articles, "AI トレンド")
+    # AI トレンド（Google Alerts）: 選別＋要約
+    kept_trends = filter_and_summarize(trend_articles, "AI トレンド")
 
-    # テックソース別
+    # テックソース別: 選別対象は filter+summarize、その他は summarize のみ
     kept_by_source: dict[str, list[Article]] = {}
     for source in SOURCE_ORDER:
         src_articles = by_source.get(source) or []
         if not src_articles:
             continue
 
+        capped = src_articles[:_MAX_ARTICLES_PER_SOURCE]
+        time.sleep(_INTER_CALL_DELAY)
         if source in FILTERED_SOURCES:
-            time.sleep(_INTER_CALL_DELAY)
-            kept = filter_articles(src_articles, source)
+            kept = filter_and_summarize(capped, source)
         else:
-            kept = src_articles[:_MAX_ARTICLES_PER_SOURCE]
+            kept = summarize_articles(capped, source)
 
         if kept:
             kept_by_source[source] = kept
