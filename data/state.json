@@ -1,5 +1,5 @@
 {
-  "last_checked": "2026-04-17T10:45:45.071378+00:00",
+  "last_checked": "2026-04-17T12:16:22.319665+00:00",
   "seen_urls": {
     "https://openai.com/index/japan-teen-safety-blueprint": "2026-03-18",
     "https://www.anthropic.com/news/claude-opus-4-6": "2026-03-18",
@@ -2557,7 +2557,8 @@
     "https://zenn.dev/ai_eris_log/articles/claude-opus-47-released-20260417": "2026-04-17",
     "https://zenn.dev/yuta02/articles/6fd1f4a5af77": "2026-04-17",
     "https://zenn.dev/neural_anvil/articles/295a1babdbc860": "2026-04-17",
-    "https://zenn.dev/ze1ny/articles/nextjs-claude-api-contract-review": "2026-04-17"
+    "https://zenn.dev/ze1ny/articles/nextjs-claude-api-contract-review": "2026-04-17",
+    "https://zenn.dev/ze1ny/articles/codesensei-2days-build": "2026-04-17"
   },
   "picked_urls": {
     "https://aismiley.co.jp/ai_news/digital-large-scale-pilot/": "2026-03-18",
@@ -2796,6 +2797,29 @@
     "https://openai.com/index/introducing-gpt-5-4-mini-and-nano": "2026-04-17",
     "https://openai.com/index/equipping-workers-with-insights-about-compensation": "2026-04-17",
     "https://blog.google/products-and-platforms/products/search/personal-intelligence-expansion/": "2026-04-17",
-    "https://blog.google/innovation-and-ai/technology/safety-security/ai-powered-open-source-security/": "2026-04-17"
+    "https://blog.google/innovation-and-ai/technology/safety-security/ai-powered-open-source-security/": "2026-04-17",
+    "https://www.techno-edge.net/article/2026/04/17/4998.html": "2026-04-17",
+    "https://www.nttdata.com/jp/ja/trends/event/2026/050801/": "2026-04-17",
+    "https://www.innervision.co.jp/report/usual/20260601": "2026-04-17",
+    "https://www.weeklybcn.com/journal/news/detail/20260417_214922.html": "2026-04-17",
+    "https://japan.zdnet.com/article/35246554/": "2026-04-17",
+    "https://k-tai.watch.impress.co.jp/docs/news/2102423.html": "2026-04-17",
+    "https://www.pref.niigata.lg.jp/sec/shigototeijyu/digitaliju-demoproject.html": "2026-04-17",
+    "https://www.kknews.co.jp/news/20260417o03": "2026-04-17",
+    "https://newsdig.tbs.co.jp/articles/-/2605914": "2026-04-17",
+    "https://www.yomiuri.co.jp/national/20260417-GYT1T00116/": "2026-04-17",
+    "https://www.asahi.com/articles/ASV4J45PHV4JUCVL026M.html": "2026-04-17",
+    "https://inside.dmm.com/articles/dmm-tsuhan-modernize-project-phase2/": "2026-04-17",
+    "https://internet.watch.impress.co.jp/docs/column/netliteracy/2101980.html": "2026-04-17",
+    "https://news.yahoo.co.jp/articles/f1e8e7ece50f2574331465d324e6c8b78120d1b5": "2026-04-17",
+    "https://zenn.dev/photoruction_bl/articles/90eea0d58013cb": "2026-04-17",
+    "https://zenn.dev/zaico/articles/ebd4f4ee6cb262": "2026-04-17",
+    "https://zenn.dev/sumasate_tec/articles/pr_review_with_claude": "2026-04-17",
+    "https://zenn.dev/neural_anvil/articles/295a1babdbc860": "2026-04-17",
+    "https://zenn.dev/ze1ny/articles/codesensei-2days-build": "2026-04-17",
+    "https://zenn.dev/mizutamari/articles/local-llm-vol6": "2026-04-17",
+    "https://zenn.dev/syunichisato51/articles/ai-news-20260417-1d6620e3": "2026-04-17",
+    "https://zenn.dev/taichan/articles/74a561e855a0b6": "2026-04-17",
+    "https://qiita.com/liher/items/0405ebd6921c1107fb3f?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-04-17"
   }
 }
