@@ -1,5 +1,5 @@
 {
-  "last_checked": "2026-04-17T10:28:49.286600+00:00",
+  "last_checked": "2026-04-17T10:45:45.071378+00:00",
   "seen_urls": {
     "https://openai.com/index/japan-teen-safety-blueprint": "2026-03-18",
     "https://www.anthropic.com/news/claude-opus-4-6": "2026-03-18",
@@ -2547,7 +2547,17 @@
     "https://www.jst.go.jp/crds/sympo/20260529/index.html": "2026-04-17",
     "https://www.innervision.co.jp/report/usual/20260601": "2026-04-17",
     "https://news.yahoo.co.jp/articles/5f6e1b6b8816808026288ac4a7bb54c08a52a90e": "2026-04-17",
-    "https://www.yomiuri.co.jp/national/20260417-GYT1T00116/": "2026-04-17"
+    "https://www.yomiuri.co.jp/national/20260417-GYT1T00116/": "2026-04-17",
+    "https://openai.com/index/introducing-gpt-5-4-mini-and-nano": "2026-04-17",
+    "https://openai.com/index/equipping-workers-with-insights-about-compensation": "2026-04-17",
+    "https://blog.google/products-and-platforms/products/search/personal-intelligence-expansion/": "2026-04-17",
+    "https://blog.google/innovation-and-ai/technology/safety-security/ai-powered-open-source-security/": "2026-04-17",
+    "https://zenn.dev/satoh_y_0323/articles/b14337c4d105da": "2026-04-17",
+    "https://zenn.dev/taichan/articles/74a561e855a0b6": "2026-04-17",
+    "https://zenn.dev/ai_eris_log/articles/claude-opus-47-released-20260417": "2026-04-17",
+    "https://zenn.dev/yuta02/articles/6fd1f4a5af77": "2026-04-17",
+    "https://zenn.dev/neural_anvil/articles/295a1babdbc860": "2026-04-17",
+    "https://zenn.dev/ze1ny/articles/nextjs-claude-api-contract-review": "2026-04-17"
   },
   "picked_urls": {
     "https://aismiley.co.jp/ai_news/digital-large-scale-pilot/": "2026-03-18",
@@ -2770,6 +2780,22 @@
     "https://zenn.dev/akifumifukaya/articles/20260417_claude_code_worktree_setup_skill": "2026-04-17",
     "https://qiita.com/autotaker1984/items/c953c044c505605daa3f?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-04-17",
     "https://qiita.com/moritalous/items/47afbfa75abb86bf98e8?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-04-17",
-    "https://qiita.com/TOMOSIA-LinhND/items/574cf3810f6532c71a4b?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-04-17"
+    "https://qiita.com/TOMOSIA-LinhND/items/574cf3810f6532c71a4b?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-04-17",
+    "https://jbpress.ismedia.jp/articles/-/94367": "2026-04-17",
+    "https://www.jst.go.jp/crds/sympo/20260529/index.html": "2026-04-17",
+    "https://zenn.dev/ai_eris_log/articles/claude-opus-47-released-20260417": "2026-04-17",
+    "https://zenn.dev/dely_jp/articles/0570e14644fc2e": "2026-04-17",
+    "https://zenn.dev/yuta02/articles/6fd1f4a5af77": "2026-04-17",
+    "https://zenn.dev/satoh_y_0323/articles/b14337c4d105da": "2026-04-17",
+    "https://zenn.dev/dely_jp/articles/a3da8551b1be43": "2026-04-17",
+    "https://zenn.dev/solvio/articles/901772dcec88cc": "2026-04-17",
+    "https://zenn.dev/ze1ny/articles/nextjs-claude-api-contract-review": "2026-04-17",
+    "https://qiita.com/kyuko/items/60f425006a4cd29c9783?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-04-17",
+    "https://qiita.com/fujimaro_/items/82472818534efecaf0c7?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-04-17",
+    "https://qiita.com/kunitomo926/items/305540d2ab13e61806c9?utm_campaign=popular_items&utm_medium=feed&utm_source=popular_items": "2026-04-17",
+    "https://openai.com/index/introducing-gpt-5-4-mini-and-nano": "2026-04-17",
+    "https://openai.com/index/equipping-workers-with-insights-about-compensation": "2026-04-17",
+    "https://blog.google/products-and-platforms/products/search/personal-intelligence-expansion/": "2026-04-17",
+    "https://blog.google/innovation-and-ai/technology/safety-security/ai-powered-open-source-security/": "2026-04-17"
   }
 }
