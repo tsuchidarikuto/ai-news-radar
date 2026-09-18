@@ -34,6 +34,7 @@ jobs:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           NOTION_WORKSPACE: ${{ secrets.NOTION_WORKSPACE }}
           GOOGLE_ALERTS_RSS_1: ${{ secrets.GOOGLE_ALERTS_RSS_1 }}
