@@ -26,7 +26,7 @@ _RETRY_BASE_DELAY = 5.0
 _INTER_CALL_DELAY = 12.0  # RPM 制限対策（free tier: flash=5RPM, flash-lite=10RPM）
 
 # ソース表示順
-SOURCE_ORDER = ["Zenn", "Qiita", "OpenAI", "Anthropic", "Google AI", "Claude Code"]
+SOURCE_ORDER = ["Zenn", "Qiita"]
 
 # LLM フィルタを掛けるテックソース（tech 系のうち絞り込む対象）
 FILTERED_SOURCES = {"Zenn", "Qiita"}

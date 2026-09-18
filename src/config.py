@@ -36,25 +36,10 @@ def get_feeds() -> list[FeedSource]:
     return feeds
 
 
+# 取り込むのは Zenn / Qiita と、環境変数で足す Google Alerts のみ。
+# OpenAI / Anthropic / Google AI / Claude Code の公式フィードは、
+# 1日あたりの件数が多く Slack が読みにくくなるため外した。
 FEEDS: list[FeedSource] = [
-    FeedSource(
-        name="OpenAI",
-        url="https://openai.com/blog/rss.xml",
-    ),
-    FeedSource(
-        name="Anthropic",
-        url="https://www.anthropic.com/news",
-        feed_type="html",
-    ),
-    FeedSource(
-        name="Google AI",
-        url="https://blog.google/technology/ai/rss/",
-    ),
-    FeedSource(
-        name="Claude Code",
-        url="https://github.com/anthropics/claude-code/releases.atom",
-        feed_type="atom",
-    ),
     FeedSource(
         name="Zenn",
         url="https://zenn.dev/topics/ai/feed",

@@ -24,8 +24,8 @@ def _render_source_block(title: str, items: list) -> list[str]:
 def _build_text(date_str: str, digest: Digest, notion_url: str) -> str:
     """Slack メッセージテキストを構築する。
 
-    Zenn / Qiita / AI トレンドは先頭1件のみ。
-    OpenAI / Anthropic / Google AI / Claude Code は全件。
+    AI トレンドと FILTERED_SOURCES（Zenn / Qiita）は先頭1件のみ。
+    それ以外のソースを足した場合は全件出す。
     """
     parts: list[str] = [f"*AI News Radar - {date_str}*"]
     cut_count = 0
