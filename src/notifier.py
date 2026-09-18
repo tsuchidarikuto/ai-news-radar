@@ -64,12 +64,19 @@ def _targets() -> tuple[_Target, ...]:
 
 
 def _render_source_block(target: _Target, title: str, items: list) -> list[str]:
-    """1ソース分のブロックを組み立てる。"""
+    """1ソース分のブロックを組み立てる。
+
+    記事ごとに 見出し / Gemini 要約 / URL の3行。要約がなければ2行。
+    要約内の改行は潰す（通知先ごとに改行の扱いが違うため）。
+    """
     if not items:
         return []
     lines = [target.bold.format(title)]
     for a in items:
         lines.append(a.title)
+        summary = " ".join((a.description or "").split())
+        if summary:
+            lines.append(summary)
         lines.append(a.url)
     return lines
 
@@ -140,6 +147,15 @@ def notify_no_articles(date_str: str) -> None:
         _post(target, url, text, f"no articles for {date_str}")
 
 
+def _dry_run_article_lines(article) -> list[str]:
+    lines = [f"  • {article.title}"]
+    summary = " ".join((article.description or "").split())
+    if summary:
+        lines.append(f"    {summary}")
+    lines.append(f"    {article.url}")
+    return lines
+
+
 def format_dry_run(date_str: str, digest: Digest) -> str:
     """dry-run 時の標準出力用テキストを生成する。"""
     lines = [f"=== AI News Radar - {date_str} ===", ""]
@@ -151,8 +167,7 @@ def format_dry_run(date_str: str, digest: Digest) -> str:
     if digest.kept_trends:
         lines.append("[AI トレンド]")
         for a in digest.kept_trends:
-            lines.append(f"  • {a.title}")
-            lines.append(f"    {a.url}")
+            lines.extend(_dry_run_article_lines(a))
         lines.append("")
 
     for source in SOURCE_ORDER:
@@ -161,8 +176,7 @@ def format_dry_run(date_str: str, digest: Digest) -> str:
             continue
         lines.append(f"[{source}]")
         for a in items:
-            lines.append(f"  • {a.title}")
-            lines.append(f"    {a.url}")
+            lines.extend(_dry_run_article_lines(a))
         lines.append("")
 
     return "\n".join(lines).rstrip()
